@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Google Cloud Pub/Sub data</title>
+  </head>
+  <body>
+
+    <br/>
+    <center>
+      <input type="text" id="device_tb"/>
+      <button onclick="setMyDevice()">Start receiving this device</button>
+    </center>
+    <br/>
+    <hr/>
+    <br/>
+    <br/>
+
+    <div style="margin:auto;width:900px;height:540px;">
+      <canvas id="myChart"></canvas>
+    </div>
+
+    <script src="lib/socket.io-client/dist/socket.io.js"></script>
+    <script src="lib/chart.js/dist/Chart.min.js"></script>
+    <script>
+
+      var my_device;
+      var last_label = 0;
+      var ctx = document.getElementById("myChart").getContext("2d");
+      var myChart;
+
+      function setMyDevice() {
+        my_device = document.getElementById('device_tb').value;
+        initChart();
+      }
+
+      function initChart() {
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                  {
+                    lineTension: 0,
+                    backgroundColor: "rgba(0, 0, 0, 0)",
+                    borderColor: "#ffaa00",
+                    data: []
+                  }
+                ]
+            },
+            options: {
+              legend: {
+                  display: false
+               },
+            }
+        });
+        last_label = 0;
+      }
+
+      function addData(chart, label, data) {
+          chart.data.labels.push(label);
+          chart.data.datasets.forEach((dataset) => {
+              dataset.data.push(data);
+          });
+          chart.update();
+      }
+      function removeData(chart) {
+          chart.data.labels.shift();
+          chart.data.datasets.forEach((dataset) => {
+              dataset.data.shift();
+          });
+          chart.update();
+      }
+
+      var socket = io();
+      socket.on('data', function(data) {
+        console.log(data)
+        if(data.device == my_device) {
+          if(last_label > 50) {
+            removeData(myChart)
+          }
+          addData(myChart, last_label++, data.data)
+        }
+      });
+
+    </script>
+  </body>
+</html>
